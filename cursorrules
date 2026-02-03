@@ -1,0 +1,254 @@
+# Soul Cards – PWA Divination App
+## .cursorrules
+
+---
+
+## PROJECT OVERVIEW
+
+Build a Progressive Web App (PWA) called **Soul Cards** — a divination card game built with **Vue.js 3** and **TypeScript**. The app uses a deck of 18 code-drawn cards (6 suits × 3 ranks). Cards are rendered entirely via CSS/SVG — no external images needed. Placeholder text is acceptable for now in place of illustrated artwork.
+
+---
+
+## TECH STACK
+
+- **Framework:** Vue.js 3 (Composition API)
+- **Language:** TypeScript
+- **Styling:** Scoped CSS (no Tailwind, no external CSS frameworks)
+- **PWA:** Use a `manifest.json` and a basic service worker for offline capability
+- **Build Tool:** Vite
+- **No backend.** Everything is client-side.
+
+---
+
+## PROJECT STRUCTURE
+
+```
+soul-cards/
+├── public/
+│   ├── manifest.json          # PWA manifest
+│   └── index.html
+├── src/
+│   ├── main.ts                # App entry point
+│   ├── App.vue                # Root component, handles routing between screens
+│   ├── data/
+│   │   └── cards.ts           # All 18 card definitions (single source of truth)
+│   ├── components/
+│   │   ├── LandingScreen.vue  # Intro / landing screen
+│   │   ├── DivinationScreen.vue # Main divination experience
+│   │   ├── CardFan.vue        # Renders the fanned-out deck of cards
+│   │   ├── Card.vue           # Single card component (code-drawn)
+│   │   └── CardReveal.vue     # Flipped card showing divination result
+│   └── styles/
+│       └── global.css         # Global styles, CSS variables for suit colors
+│   └── service-worker.js      # Basic service worker for PWA
+├── vite.config.ts
+├── tsconfig.json
+├── package.json
+└── .cursorrules               # This file
+```
+
+---
+
+## CARD DATA STRUCTURE
+
+All 18 cards are defined in `src/data/cards.ts`. Each card has:
+
+```typescript
+interface SoulCard {
+  id: string;                  // e.g. "earth-1"
+  suit: Suit;                  // "earth" | "water" | "fire" | "air" | "space" | "time"
+  rank: 1 | 2 | 3;
+  symbol: string;              // Name of the symbol: "tree" | "wave" | "flame" | "wind" | "diamond" | "clock"
+  divination: string;          // The short divination text shown on the card
+}
+
+type Suit = "earth" | "water" | "fire" | "air" | "space" | "time";
+```
+
+### Complete Card Definitions
+
+#### EARTH (suit color: brown, symbol: tree)
+- Rank 1: "Your body will break first"
+- Rank 2: "Take care of your body and it will take care of you"
+- Rank 3: "You can push through the pain"
+
+#### WATER (suit color: dark blue, symbol: wave)
+- Rank 1: "Your mind will fumble"
+- Rank 2: "Listen to your mind and it'll navigate"
+- Rank 3: "Rational and strategic decisions will come to you"
+
+#### FIRE (suit color: red, symbol: flame)
+- Rank 1: "Will is weakened"
+- Rank 2: "Balance will with your circumstances"
+- Rank 3: "Focused will can shape outcomes"
+
+#### AIR (suit color: light blue, symbol: turbulent wind)
+- Rank 1: "Spirit will break if you follow the path"
+- Rank 2: "Spirit will remain unaffected"
+- Rank 3: "Follow the path to nourish your spirit"
+
+#### SPACE (suit color: black, symbol: diamond)
+- Rank 1: "A sense of exile or disconnection"
+- Rank 2: "The location holds no significance. You are passing through"
+- Rank 3: "Strong connection provides belonging and opportunity"
+
+#### TIME (suit color: white, symbol: clock)
+- Rank 1: "Bad times are coming"
+- Rank 2: "Good times are coming"
+- Rank 3: "You are in the Good Times and it'll last"
+
+---
+
+## SUIT COLOR PALETTE (CSS Variables)
+
+Define these in `global.css`:
+
+```css
+:root {
+  --suit-earth:  #8B5E3C;
+  --suit-water:  #1A3A5C;
+  --suit-fire:   #C0392B;
+  --suit-air:    #7EC8E3;
+  --suit-space:  #1A1A2E;
+  --suit-time:   #F0F0F0;
+
+  --text-on-earth: #FFFFFF;
+  --text-on-water: #FFFFFF;
+  --text-on-fire:  #FFFFFF;
+  --text-on-air:   #1A1A2E;
+  --text-on-space: #FFFFFF;
+  --text-on-time:  #1A1A2E;
+}
+```
+
+---
+
+## SCREEN FLOW
+
+```
+LandingScreen  ──(tap "Begin")──>  DivinationScreen
+                                        │
+                                        ├─ State: IDLE
+                                        │   └─ Shows "Shuffle" button
+                                        │
+                                        ├─ State: FANNED
+                                        │   └─ 18 cards fanned out in an arc
+                                        │   └─ User taps one card
+                                        │
+                                        ├─ State: REVEALING
+                                        │   └─ Selected card flips over (animation)
+                                        │   └─ Shows suit symbol + rank + divination text
+                                        │   └─ Shows "Shuffle Again" button
+                                        │
+                                        └─ (tap "Shuffle Again") ──> back to IDLE
+```
+
+---
+
+## COMPONENT SPECS
+
+### LandingScreen.vue
+- App title: **"Soul Cards"**
+- Subtitle or short description: something about spiritual reflection / divination
+- A single CTA button: **"Begin"**
+- Emits an event or navigates to DivinationScreen on tap
+- Minimal, clean design. Dark background recommended to set mood.
+
+### DivinationScreen.vue
+- Manages the three states: IDLE → FANNED → REVEALING
+- On "Shuffle": randomly shuffles the 18-card array, transitions to FANNED
+- Passes selected card data to CardReveal when a card is tapped
+- "Shuffle Again" resets state back to IDLE
+
+### CardFan.vue
+- Receives the full deck (18 cards) as a prop
+- Renders all 18 `Card.vue` components arranged in an arc/fan layout
+- Each card is slightly rotated and offset from the center using CSS transforms
+- Fan layout should be visually balanced and fit on a mobile screen
+- Basic animation: cards fan out from a stacked position when transitioning from IDLE to FANNED
+- When user taps a card, emits the selected card back to parent
+- Cards should NOT be fully visible (fan overlap is expected) — user picks by tapping a position in the arc
+
+### Card.vue (Code-Drawn Card)
+- Receives a single `SoulCard` as prop
+- Renders a card with:
+  - **Background color** based on suit
+  - **Top left:** Rank number (1, 2, or 3), styled clearly
+  - **Center:** A simple SVG symbol representing the suit element (tree, wave, flame, wind, diamond, clock). These can be basic geometric/abstract SVG shapes — placeholder quality is fine.
+  - **Bottom panel:** A distinct panel/strip showing the divination text. Ensure text contrast is readable against suit color.
+- Card dimensions should follow a **2:3 portrait ratio** (e.g., 200px × 300px at base, scales with viewport)
+- Card has a **back design** (shown when face-down in the fan). Back should be a simple dark design, same for all cards — does NOT reveal suit or rank.
+
+### CardReveal.vue
+- Receives the selected `SoulCard` as prop
+- Displays the card flipped to its face (the full card as rendered by Card.vue)
+- Flip animation: 3D CSS flip (rotateY) from back to front
+- After flip completes, the divination text is clearly readable
+- Shows a **"Shuffle Again"** button below the revealed card
+
+---
+
+## ANIMATIONS
+
+Keep animations simple and smooth. All CSS-based. No animation libraries.
+
+- **Fan out:** Cards animate from a stacked/center position to their fanned arc positions. Use CSS transitions with staggered `transition-delay` per card for a cascading effect.
+- **Card selection:** Subtle scale-up or glow on hover/tap to indicate which card is being selected.
+- **Card flip (reveal):** Classic 3D CSS flip using `transform: rotateY()`. Card back rotates out, card face rotates in. Use `perspective` on the parent for depth effect.
+- **Shuffle Again:** Subtle fade or slide for the button appearing after reveal.
+
+---
+
+## PWA REQUIREMENTS
+
+### manifest.json
+```json
+{
+  "name": "Soul Cards",
+  "short_name": "Soul Cards",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1A1A2E",
+  "theme_color": "#1A1A2E",
+  "icons": []
+}
+```
+
+### Service Worker
+- Basic service worker that caches the app shell for offline use
+- No network requests needed — entire app is self-contained
+
+---
+
+## DESIGN GUIDELINES
+
+- **Tone:** Spiritual, minimal, grounded. Dark and moody overall palette.
+- **Typography:** Use a clean, slightly mystical or serif-style font. Google Fonts is acceptable — pick something distinctive, NOT Inter/Roboto/Arial.
+- **Layout:** Mobile-first. Design for a single-hand experience on a phone screen.
+- **Cards:** Should feel tactile and intentional. Clean borders, subtle shadows.
+- **Text:** All divination text must be clearly legible on the card bottom panel. Ensure sufficient contrast using the `--text-on-[suit]` variables.
+- **Color:** Dark background throughout the app (outside of cards). Cards are the focal point — let suit colors pop against the dark UI.
+- **No clutter.** Every element on screen serves a purpose.
+
+---
+
+## IMPORTANT CONSTRAINTS
+
+- **No external images.** All card visuals are code-drawn (SVG/CSS).
+- **No backend.** Fully client-side.
+- **No external CSS frameworks.** Use scoped CSS only.
+- **TypeScript throughout.** All `.vue` files use `<script setup lang="ts">`.
+- **Vue 3 Composition API only.** No Options API.
+- **Mobile-first.** Test layout at 375px–430px viewport widths.
+- **Suit Art**. For now we'll use text for suit but it should support drop in replacement with actual designs.
+
+## GENERAL PRINCIPLES
+
+- CLEAN CODE: your code should be clean with meaningful names and should read top down
+- DRY: Do not repeat yourself. if you find you are repeating yourself refactor it into a helper/utility function
+- YAGNI: You aren't going to need it. Only implement functions/features/params that you are going to use. no need to account for future
+- Self documenting code: The Names in your code should be meaningful and should clearly explain what the variable/function/class is doing
+- Small functions: Functions should be no longer than 10 lines
+- components based design: functions/classes/variables that act together should be clubed into an importable component
+- Seperation of concern: Each file should contain 1 main class and each class should only do 1 thing
+- NO MARKDOWN ARTIFACTS: do not create any markdown files unless explicitly asked for.
